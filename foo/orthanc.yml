@@ -1,0 +1,63 @@
+version: '3.7'
+
+services:
+
+  gateway-driver:
+    depends_on:
+    - wireguard
+    - orthanc-foo
+    image: python:3-alpine
+    container_name: gateway-driver
+    network_mode: service:wireguard
+    restart: unless-stopped
+    volumes:
+    - ./orthanc:/home/orthanc
+    command: $COMMAND
+
+  orthanc-foo:
+    depends_on:
+    - wireguard
+    image: osimis/orthanc
+    container_name: orthanc
+    network_mode: service:wireguard
+    volumes:
+    - orthanc-foo-storage:/var/lib/orthanc/db
+    restart: unless-stopped
+    environment:
+      ORTHANC__NAME: $ORTHANC_NAME
+      ORTHANC__REGISTERED_USERS: |-
+        {$USER: $PASSWORD}
+      VERBOSE_ENABLED: 'true'
+
+      TRANSFERS_PLUGIN_ENABLED: 'true'
+      ORTHANC__TRANSFERS__MAX_HTTP_RETRIES: 5
+
+      ORTHANC__ORTHANC_PEERS: '{"$PEER_NAME": {"Url": $PEER_URL, "Username":
+        $PEER_USER, "Password": $PEER_PASSWORD}}'
+  wireguard:
+    image: linuxserver/wireguard
+    container_name: wireguard
+    ports: [4243:4242, 8043:8042]
+    restart: unless-stopped
+    privileged: true
+    networks:
+    - backbone
+    volumes:
+    - ./wireguard:/config
+    - /lib/modules:/lib/modules:ro
+    environment:
+    - PUID=1000
+    - PGID=1000
+    cap_add:
+    - NET_ADMIN
+    - SYS_MODULE
+    sysctls:
+    - net.ipv4.conf.all.src_valid_mark=1
+
+    command: /bin/sh -c 'ping google.com'
+networks:
+  backbone:
+    driver: bridge
+
+volumes:
+  orthanc-foo-storage:

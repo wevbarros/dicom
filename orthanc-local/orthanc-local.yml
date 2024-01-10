@@ -1,0 +1,25 @@
+version: "2"
+services:
+  orthanc-local:
+    image: osimis/orthanc
+    ports: ["4240:4240", "8040:8040"]
+    volumes:
+      - orthanc-local-storage:/var/lib/orthanc/db
+    restart: unless-stopped
+    environment:
+      ORTHANC__NAME: "OrthancLOCAL"
+      ORTHANC__REGISTERED_USERS: |
+        { "orthanc" : "orthanc" }
+      VERBOSE_ENABLED: "true"
+      TRANSFERS_PLUGIN_ENABLED: "true"
+      ORTHANC__TRANSFERS__MAX_HTTP_RETRIES: 5
+      DICOM_MODALITIES: |
+        {
+          "Horos": ["target-horos", "10.0.0.143", 11112],
+          "weasis": ["WEASIS_QR", "172.18.0.1", 11113],
+          "app2": ["IDV-iOS", "10.0.0.151", 11112]
+        }
+      ORTHANC__DICOM_PORT: 4240
+      ORTHANC__HTTP_PORT: 8040
+volumes:
+  orthanc-local-storage:
